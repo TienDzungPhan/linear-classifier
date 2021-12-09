@@ -69,8 +69,15 @@ def binary_train(X, y, loss="perceptron", w0=None, b0=None, step_size=0.5, max_i
         # gradient descent with step size "step_size"  #
         # to minimize logistic loss                    # 
         ################################################
+        for t in range(max_iterations):
+            gradient_w, gradient_b = 0, 0
 
-        
+            for i in range(len(X)):
+                gradient_w += sigmoid(-y[i] * np.transpose(w) @ X[i]) * y[i] * X[i]
+                gradient_b += sigmoid(-y[i] * np.transpose(w) @ X[i]) * y[i]
+
+            w += (step_size/N)*gradient_w
+            b += (step_size/N)*gradient_b
 
     else:
         raise "Undefined loss function."
@@ -93,7 +100,7 @@ def sigmoid(z):
     # TODO 3 : fill in the sigmoid function    #
     ############################################
     
-    return value
+    return 1 / (1 + (1 / np.power(np.e, z)))
 
 
 def binary_predict(X, w, b):
