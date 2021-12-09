@@ -45,8 +45,22 @@ def binary_train(X, y, loss="perceptron", w0=None, b0=None, step_size=0.5, max_i
         # to minimize perceptron loss (use -1 as the   #
 		# derivative of the perceptron loss at 0)      # 
         ################################################
+        for t in range(max_iterations):
+            gradient_w, gradient_b = 0, 0
 
-        
+            for i in range(len(X)):
+                sub_y = y[i]
+                if sub_y == 0:
+                    sub_y = -1
+                if sub_y * (np.transpose(w) @ X[i] + b) < 0:
+                    gradient_w += sub_y*X[i]
+                    gradient_b += sub_y
+                elif sub_y * (np.transpose(w) @ X[i] + b) == 0:
+                    gradient_w += -1*X[i]
+                    gradient_b += -1
+
+            w += (step_size/N)*gradient_w
+            b += (step_size/N)*gradient_b
         
 
     elif loss == "logistic":
