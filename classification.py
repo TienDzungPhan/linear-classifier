@@ -11,8 +11,8 @@ def run_binary():
                             data_loader_mnist 
 
     datasets = [(toy_data_binary(), 'Synthetic data'), 
-                (moon_dataset(), 'Two Moon data'),
-                (data_loader_mnist(), 'Binarized MNIST data')]
+                (moon_dataset(), 'Two Moon data'),]
+                # (data_loader_mnist(), 'Binarized MNIST data')]
 
     for data, name in datasets:
         print(name)

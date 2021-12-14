@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.lib.function_base import gradient
 
 #######################################################
 # DO NOT MODIFY ANY CODE OTHER THAN THOSE TODO BLOCKS #
@@ -70,11 +71,10 @@ def binary_train(X, y, loss="perceptron", w0=None, b0=None, step_size=0.5, max_i
         # to minimize logistic loss                    # 
         ################################################
         for t in range(max_iterations):
-            gradient_w, gradient_b = 0, 0
+            sub_y = np.array([-1 if y[n] == 0 else y[n] for n in range(N)])
 
-            for i in range(len(X)):
-                gradient_w += sigmoid(-y[i] * np.transpose(w) @ X[i]) * y[i] * X[i]
-                gradient_b += sigmoid(-y[i] * np.transpose(w) @ X[i]) * y[i]
+            gradient_w = np.transpose(X) @ (sub_y * sigmoid(-sub_y * (X @ w + b)))
+            gradient_b = np.sum(sub_y * sigmoid(-sub_y * (X @ w + b)))
 
             w += (step_size/N)*gradient_w
             b += (step_size/N)*gradient_b
@@ -100,7 +100,7 @@ def sigmoid(z):
     # TODO 3 : fill in the sigmoid function    #
     ############################################
     
-    return 1 / (1 + (1 / np.power(np.e, z)))
+    return 1 / (1 + np.exp(-z))
 
 
 def binary_predict(X, w, b):
@@ -120,109 +120,138 @@ def binary_predict(X, w, b):
     #############################################################
     # TODO 4 : predict DETERMINISTICALLY (i.e. do not randomize)#
     #############################################################
-    preds = [1 if (np.transpose(w) @ x + b) > 0 else 0 for x in X]
+    preds = np.array([1 if (np.transpose(w) @ x + b) > 0 else 0 for x in X])
 
-    # assert preds.shape == (N,) 
+    assert preds.shape == (N,) 
     return preds
 
 
-# def multiclass_train(X, y, C,
-#                      w0=None, 
-#                      b0=None,
-#                      gd_type="sgd",
-#                      step_size=0.5, 
-#                      max_iterations=1000):
-#     """
-#     Inputs:
-#     - X: training features, a N-by-D numpy array, where N is the 
-#     number of training points and D is the dimensionality of features
-#     - y: multiclass training labels, a N dimensional numpy array where
-#     N is the number of training points, indicating the labels of 
-#     training data (0, 1, ..., C-1)
-#     - C: number of classes in the data
-#     - gd_type: gradient descent type, either GD or SGD
-#     - step_size: step size (learning rate)
-#     - max_iterations: number of iterations to perform (stochastic) gradient descent
+def multiclass_train(X, y, C,
+                     w0=None, 
+                     b0=None,
+                     gd_type="sgd",
+                     step_size=0.5, 
+                     max_iterations=1000):
+    """
+    Inputs:
+    - X: training features, a N-by-D numpy array, where N is the 
+    number of training points and D is the dimensionality of features
+    - y: multiclass training labels, a N dimensional numpy array where
+    N is the number of training points, indicating the labels of 
+    training data (0, 1, ..., C-1)
+    - C: number of classes in the data
+    - gd_type: gradient descent type, either GD or SGD
+    - step_size: step size (learning rate)
+    - max_iterations: number of iterations to perform (stochastic) gradient descent
 
-#     Returns:
-#     - w: C-by-D weight matrix, where C is the number of classes and D 
-#     is the dimensionality of features.
-#     - b: a bias vector of length C, where C is the number of classes
+    Returns:
+    - w: C-by-D weight matrix, where C is the number of classes and D 
+    is the dimensionality of features.
+    - b: a bias vector of length C, where C is the number of classes
 	
-#     Implement multinomial logistic regression for multiclass 
-#     classification. Again for GD use the *average* of the gradients for all training 
-#     examples multiplied by the step_size to update parameters.
+    Implement multinomial logistic regression for multiclass 
+    classification. Again for GD use the *average* of the gradients for all training 
+    examples multiplied by the step_size to update parameters.
 	
-#     You may find it useful to use a special (one-hot) representation of the labels, 
-#     where each label y_i is represented as a row of zeros with a single 1 in
-#     the column that corresponds to the class y_i. Also recall the tip on the 
-#     implementation of the softmax function to avoid numerical issues.
-#     """
+    You may find it useful to use a special (one-hot) representation of the labels, 
+    where each label y_i is represented as a row of zeros with a single 1 in
+    the column that corresponds to the class y_i. Also recall the tip on the 
+    implementation of the softmax function to avoid numerical issues.
+    """
 
-#     N, D = X.shape
+    N, D = X.shape
 
-#     w = np.zeros((C, D))
-#     if w0 is not None:
-#         w = w0
+    w = np.zeros((C, D))
+    if w0 is not None:
+        w = w0
     
-#     b = np.zeros(C)
-#     if b0 is not None:
-#         b = b0
+    b = np.zeros(C)
+    if b0 is not None:
+        b = b0
 
-#     np.random.seed(42) #DO NOT CHANGE THE RANDOM SEED IN YOUR FINAL SUBMISSION
-#     if gd_type == "sgd":
+    np.random.seed(42) #DO NOT CHANGE THE RANDOM SEED IN YOUR FINAL SUBMISSION
+    if gd_type == "sgd":
 
-#         for it in range(max_iterations):
-#             n = np.random.choice(N)
-#             ####################################################
-#             # TODO 5 : perform "max_iterations" steps of       #
-#             # stochastic gradient descent with step size       #
-#             # "step_size" to minimize logistic loss. We already#
-#             # pick the index of the random sample for you (n)  #
-#             ####################################################			
-        
+        for it in range(max_iterations):
+            n = np.random.choice(N)
+            ####################################################
+            # TODO 5 : perform "max_iterations" steps of       #
+            # stochastic gradient descent with step size       #
+            # "step_size" to minimize logistic loss. We already#
+            # pick the index of the random sample for you (n)  #
+            ####################################################			
+            loss = X[n].dot(np.transpose(w)) + b
+            loss -= max(loss)
+            softmax = np.exp(loss)
+            softmax /= np.sum(softmax)
+            softmax[y[n]] -= 1
+
+            gradient_w = np.dot(softmax.reshape(C, 1), X[n].reshape(1, D))
+            gradient_b = softmax
+            
+            w -= step_size * gradient_w
+            b -= step_size * gradient_b
+
+    elif gd_type == "gd":
+        ####################################################
+        # TODO 6 : perform "max_iterations" steps of       #
+        # gradient descent with step size "step_size"      #
+        # to minimize logistic loss.                       #
+        ####################################################
+        for it in range(max_iterations):
+            loss = X.dot(np.transpose(w)) + b
+            softmax = np.exp(loss)
+            softmax /= np.sum(softmax, axis = 1, keepdims = True)
+            
+            # If label of X[n] is c, then membership[n][c] = 1
+            membership = np.zeros((N, C))
+            membership[np.arange(N), y] = 1
+
+            softmax -= membership
+
+            gradient_w = np.dot(np.transpose(softmax), X)
+            gradient_b = np.sum(softmax, axis = 0)
+
+            w -= (step_size/N) * gradient_w
+            b -= (step_size/N) * gradient_b
         
 
-#     elif gd_type == "gd":
-#         ####################################################
-#         # TODO 6 : perform "max_iterations" steps of       #
-#         # gradient descent with step size "step_size"      #
-#         # to minimize logistic loss.                       #
-#         ####################################################
-        
-        
-
-#     else:
-#         raise "Undefined algorithm."
+    else:
+        raise "Undefined algorithm."
     
 
-#     assert w.shape == (C, D)
-#     assert b.shape == (C,)
+    assert w.shape == (C, D)
+    assert b.shape == (C,)
 
-#     return w, b
+    return w, b
 
 
-# def multiclass_predict(X, w, b):
-#     """
-#     Inputs:
-#     - X: testing features, a N-by-D numpy array, where N is the 
-#     number of training points and D is the dimensionality of features
-#     - w: weights of the trained model, C-by-D 
-#     - b: bias terms of the trained model, length of C
+def multiclass_predict(X, w, b):
+    """
+    Inputs:
+    - X: testing features, a N-by-D numpy array, where N is the 
+    number of training points and D is the dimensionality of features
+    - w: weights of the trained model, C-by-D 
+    - b: bias terms of the trained model, length of C
     
-#     Returns:
-#     - preds: N dimensional vector of multiclass predictions.
-#     Predictions should be from {0, 1, ..., C - 1}, where
-#     C is the number of classes
-#     """
-#     N, D = X.shape
-#     #############################################################
-#     # TODO 7 : predict DETERMINISTICALLY (i.e. do not randomize)#
-#     #############################################################
+    Returns:
+    - preds: N dimensional vector of multiclass predictions.
+    Predictions should be from {0, 1, ..., C - 1}, where
+    C is the number of classes
+    """
+    N, D = X.shape
+    #############################################################
+    # TODO 7 : predict DETERMINISTICALLY (i.e. do not randomize)#
+    #############################################################
+    C = len(b)
+    preds = []
 
-    
-#     assert preds.shape == (N,)
-#     return preds
+    for x in X:
+        probs = [{ "label": k, "value": np.transpose(w[k]) @ x + b[k] } for k in range(C)]
+        preds.append(max(probs, key = lambda prob : prob["value"])["label"])
+    preds = np.array(preds)
+    assert preds.shape == (N,)
+    return preds
 
 
 
